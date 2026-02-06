@@ -29,8 +29,8 @@ class Settings(BaseSettings):
 
     # Agent Maestro (for free Claude access via GitHub Copilot)
     agent_maestro_url: str = Field(default="http://localhost:23333/api/anthropic")
-    claude_model_light: str = Field(default="claude-sonnet-4-20250514")
-    claude_model_heavy: str = Field(default="claude-sonnet-4-20250514")
+    claude_model_light: str = Field(default="claude-opus-4.5")
+    claude_model_heavy: str = Field(default="claude-opus-4.5")
 
     # Database
     database_url: str = Field(

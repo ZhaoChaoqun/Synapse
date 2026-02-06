@@ -23,7 +23,7 @@ class AnthropicClient:
 
     def __init__(
         self,
-        model_name: str = "claude-sonnet-4-20250514",
+        model_name: str = "claude-opus-4.5",
         base_url: str = "http://localhost:23333/api/anthropic",
     ):
         """
@@ -299,24 +299,24 @@ _heavy_client: Optional[AnthropicClient] = None
 
 
 def get_claude_light_client() -> AnthropicClient:
-    """Get light Claude client (Claude Haiku - fast)."""
+    """Get light Claude client (Claude Opus 4.5)."""
     global _light_client
     if _light_client is None:
         base_url = settings.agent_maestro_url if hasattr(settings, 'agent_maestro_url') else "http://localhost:23333/api/anthropic"
         _light_client = AnthropicClient(
-            model_name="claude-sonnet-4-20250514",  # Use Sonnet as "light" since it's fast
+            model_name="claude-opus-4.5",
             base_url=base_url,
         )
     return _light_client
 
 
 def get_claude_heavy_client() -> AnthropicClient:
-    """Get heavy Claude client (Claude Opus - high quality)."""
+    """Get heavy Claude client (Claude Opus 4.5)."""
     global _heavy_client
     if _heavy_client is None:
         base_url = settings.agent_maestro_url if hasattr(settings, 'agent_maestro_url') else "http://localhost:23333/api/anthropic"
         _heavy_client = AnthropicClient(
-            model_name="claude-sonnet-4-20250514",  # Opus may not be available, fallback to Sonnet
+            model_name="claude-opus-4.5",
             base_url=base_url,
         )
     return _heavy_client
