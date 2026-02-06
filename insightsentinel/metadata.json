@@ -1,0 +1,5 @@
+{
+  "name": "InsightSentinel",
+  "description": "A futuristic autonomous market monitor dashboard featuring live reasoning logs, real-time social pulse tracking, and intelligence mapping powered by Gemini.",
+  "requestFramePermissions": []
+}
