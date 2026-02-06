@@ -1,6 +1,10 @@
 import React from 'react';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  children?: React.ReactNode;
+}
+
+export const Header: React.FC<HeaderProps> = ({ children }) => {
   return (
     <header className="h-14 border-b border-border-dark bg-surface-darker flex items-center justify-between px-6 shrink-0 z-20">
       <div className="flex items-center gap-4">
@@ -22,6 +26,13 @@ export const Header: React.FC = () => {
           <div className="size-2 rounded-full bg-secondary animate-pulse-green"></div>
           <span className="text-xs font-mono text-secondary">SYSTEM ONLINE</span>
         </div>
+        {/* Custom status indicator from parent */}
+        {children && (
+          <>
+            <div className="h-6 w-px bg-border-dark mx-2"></div>
+            {children}
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-6">
@@ -47,8 +58,8 @@ export const Header: React.FC = () => {
           <button className="text-text-dim hover:text-white transition-colors">
             <span className="material-symbols-outlined">settings</span>
           </button>
-          <div 
-            className="size-8 rounded-full bg-surface-dark border border-border-dark overflow-hidden bg-cover bg-center" 
+          <div
+            className="size-8 rounded-full bg-surface-dark border border-border-dark overflow-hidden bg-cover bg-center"
             style={{backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDwMHy6ymXm63bnObG5oQpJvKrz63hZW5izdr9tsyaUtvlYjBsnqKaXM81MLmj7Q7AwTq_AjofoCod9LljSnYnZ4ICXOEDnNpRgZTtmIAWvCvVPYV0F0ubir--5uAc1I-acVtx8P-G1oLGT-Jisd3u35cuu4kli2LkkyxlQO-xOvYmhWLQlIsQeC5vHcIQlfL8d1loB4y_4zezzyME7EOQGHS_bwQgjTXi32fkbucUJlUHxqqopHtj-MszOIzZNqAujZar4uJgSzCd9)'}}
           ></div>
         </div>

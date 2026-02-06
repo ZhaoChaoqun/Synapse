@@ -3,9 +3,10 @@ import React, { useState } from 'react';
 interface CommandBarProps {
   onExecute: (command: string) => void;
   isProcessing: boolean;
+  onAbort?: () => void;
 }
 
-export const CommandBar: React.FC<CommandBarProps> = ({ onExecute, isProcessing }) => {
+export const CommandBar: React.FC<CommandBarProps> = ({ onExecute, isProcessing, onAbort }) => {
   const [input, setInput] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,14 +52,25 @@ export const CommandBar: React.FC<CommandBarProps> = ({ onExecute, isProcessing 
             </div>
           </div>
 
-          <button 
-            type="submit"
-            disabled={isProcessing || !input.trim()}
-            className={`bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold tracking-wide transition-colors flex items-center gap-2 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {isProcessing ? 'PROCESSING' : 'EXECUTE'}
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </button>
+          {isProcessing && onAbort ? (
+            <button
+              type="button"
+              onClick={onAbort}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg text-sm font-bold tracking-wide transition-colors flex items-center gap-2"
+            >
+              ABORT
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isProcessing || !input.trim()}
+              className={`bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold tracking-wide transition-colors flex items-center gap-2 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isProcessing ? 'PROCESSING' : 'EXECUTE'}
+              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+          )}
         </form>
 
         {/* Quick Actions */}
