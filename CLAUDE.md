@@ -30,11 +30,17 @@ Synapse/
 - Tailwind CSS
 - Google Gemini API
 
-### 后端 (待实现)
-- Python + FastAPI
+### 后端 (已实现)
+- Python 3.11+ (使用 **uv** 管理环境和依赖)
+- FastAPI
 - PostgreSQL + pgvector (向量数据库)
 - Redis (缓存/队列)
-- Google Gemini API (LLM)
+- LLM: Claude Opus 4.5 (通过 Agent Maestro 免费使用) / Gemini
+
+### LLM 集成
+- **Agent Maestro**: VS Code 扩展，通过 GitHub Copilot 订阅免费使用 Claude API
+- 默认使用 `claude-opus-4.5` 模型
+- 可通过 `LLM_PROVIDER` 环境变量切换到 Gemini
 
 ## Claude 使用规范
 
@@ -67,8 +73,28 @@ cd insightsentinel
 npm install
 npm run dev
 
-# 后端开发 (待实现)
+# 后端开发 (使用 uv)
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv sync                        # 安装依赖
+uv run uvicorn app.main:app --reload  # 启动服务
+
+# 或者使用 uv run 直接运行
+uv run python -m uvicorn app.main:app --reload
+```
+
+## 环境配置
+
+后端配置文件: `backend/.env`
+
+```bash
+# LLM Provider: "anthropic" (默认，通过 Agent Maestro) 或 "gemini"
+LLM_PROVIDER=anthropic
+
+# Agent Maestro (需要 VS Code + Agent Maestro 扩展运行)
+AGENT_MAESTRO_URL=http://localhost:23333/api/anthropic
+CLAUDE_MODEL_LIGHT=claude-opus-4.5
+CLAUDE_MODEL_HEAVY=claude-opus-4.5
+
+# Gemini (可选，仅当 LLM_PROVIDER=gemini 时需要)
+GEMINI_API_KEY=your_key
 ```
