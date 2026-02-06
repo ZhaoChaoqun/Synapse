@@ -21,8 +21,16 @@ class Settings(BaseSettings):
     # Environment
     environment: str = Field(default="development")
 
+    # LLM Provider: "gemini" or "anthropic" (via Agent Maestro)
+    llm_provider: str = Field(default="anthropic")
+
     # API Keys
     gemini_api_key: str = Field(default="")
+
+    # Agent Maestro (for free Claude access via GitHub Copilot)
+    agent_maestro_url: str = Field(default="http://localhost:23333/api/anthropic")
+    claude_model_light: str = Field(default="claude-sonnet-4-20250514")
+    claude_model_heavy: str = Field(default="claude-sonnet-4-20250514")
 
     # Database
     database_url: str = Field(

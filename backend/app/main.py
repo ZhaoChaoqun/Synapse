@@ -58,10 +58,15 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         """Health check endpoint."""
+        from app.core.llm.router import check_llm_availability
+
+        llm_status = await check_llm_availability()
+
         return {
             "status": "healthy",
             "version": app.version,
             "environment": settings.environment,
+            "llm": llm_status,
         }
 
     return app
