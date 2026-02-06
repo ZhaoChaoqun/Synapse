@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mission Control Dashboard - InsightSentinel</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "secondary": "#00ff9d",
+                        "accent": "#6366f1",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#0b1015",
+                        "surface-dark": "#161e27",
+                        "surface-darker": "#111820",
+                        "border-dark": "#2a3642",
+                        "text-dim": "#94a3b8",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for terminal feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111820; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a3642; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151; 
+        }
+        
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        .pulse-dot {
+            box-shadow: 0 0 0 0 rgba(19, 127, 236, 0.7);
+            animation: pulse-blue 2s infinite;
+        }
+
+        @keyframes pulse-blue {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(19, 127, 236, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(19, 127, 236, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(19, 127, 236, 0);
+            }
+        }
+        
+        .pulse-dot-green {
+            box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(0, 255, 157, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(0, 255, 157, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="h-14 border-b border-border-dark bg-surface-darker flex items-center justify-between px-6 shrink-0 z-20">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="size-8 rounded bg-gradient-to-br from-primary to-blue-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]">radar</span>
+</div>
+<div>
+<h1 class="text-base font-bold tracking-wider leading-none">INSIGHT<span class="text-primary">SENTINEL</span></h1>
+<p class="text-[10px] text-text-dim tracking-[0.2em] font-mono uppercase">GCR Market Monitor v2.4</p>
+</div>
+</div>
+<div class="h-6 w-px bg-border-dark mx-2"></div>
+<div class="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded border border-primary/20">
+<div class="size-2 rounded-full bg-secondary pulse-dot-green"></div>
+<span class="text-xs font-mono text-secondary">SYSTEM ONLINE</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-xs font-mono text-text-dim">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">memory</span>
+<span>CPU: 34%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">sd_storage</span>
+<span>MEM: 12GB</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">network_check</span>
+<span>LATENCY: 42ms</span>
+</div>
+</div>
+<div class="h-6 w-px bg-border-dark"></div>
+<div class="flex items-center gap-3">
+<button class="text-text-dim hover:text-white transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="text-text-dim hover:text-white transition-colors"><span class="material-symbols-outlined">settings</span></button>
+<div class="size-8 rounded-full bg-surface-dark border border-border-dark overflow-hidden" data-alt="User Avatar Abstract Gradient" style="background: linear-gradient(45deg, #137fec, #0b1015);"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Sidebar: Live Reasoning Feed -->
+<aside class="w-80 bg-surface-darker border-r border-border-dark flex flex-col shrink-0 z-10">
+<div class="p-4 border-b border-border-dark flex items-center justify-between">
+<h2 class="text-sm font-bold uppercase tracking-widest text-text-dim flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">terminal</span>
+                    Live Reasoning
+                </h2>
+<div class="flex gap-1">
+<div class="size-2 rounded-full bg-red-500/20 border border-red-500/50"></div>
+<div class="size-2 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+<div class="size-2 rounded-full bg-green-500/20 border border-green-500/50"></div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-4">
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-primary/50 pl-3">
+<div class="flex items-center gap-2 text-primary/70 mb-1">
+<span class="opacity-50">14:02:45</span>
+<span class="text-[10px] px-1 bg-primary/20 rounded text-primary">INFO</span>
+</div>
+<p class="text-gray-300 leading-relaxed">INIT: Connection to Weibo Firehose established via Proxy Node #442.</p>
+</div>
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-border-dark pl-3 opacity-60">
+<div class="flex items-center gap-2 text-text-dim mb-1">
+<span class="opacity-50">14:02:48</span>
+<span class="text-[10px] px-1 bg-gray-700/50 rounded text-gray-400">DEBUG</span>
+</div>
+<p class="text-gray-400 leading-relaxed">Parsing JSON stream from API endpoint /v2/stream/douyin.</p>
+</div>
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-yellow-500/50 pl-3">
+<div class="flex items-center gap-2 text-yellow-500/70 mb-1">
+<span class="opacity-50">14:02:50</span>
+<span class="text-[10px] px-1 bg-yellow-500/20 rounded text-yellow-500">WARN</span>
+</div>
+<p class="text-gray-300 leading-relaxed">High velocity detected on keyword "DeepSeek". Threshold exceeded by 15%.</p>
+</div>
+<!-- Log Entry - Active -->
+<div class="flex flex-col gap-1 border-l-2 border-secondary pl-3 bg-secondary/5 rounded-r p-2 -ml-2">
+<div class="flex items-center gap-2 text-secondary mb-1">
+<span class="opacity-50">14:03:01</span>
+<span class="text-[10px] px-1 bg-secondary/20 rounded text-secondary">EXEC</span>
+</div>
+<p class="text-white leading-relaxed">Cross-referencing Douyin trends with WeChat Official Accounts...</p>
+<div class="mt-1 w-full bg-gray-800 rounded-full h-1 overflow-hidden">
+<div class="bg-secondary h-full w-[65%]"></div>
+</div>
+</div>
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-border-dark pl-3">
+<div class="flex items-center gap-2 text-text-dim mb-1">
+<span class="opacity-50">14:03:12</span>
+<span class="text-[10px] px-1 bg-primary/20 rounded text-primary">INFO</span>
+</div>
+<p class="text-gray-300 leading-relaxed">Scraping complete. 1,204 new entities identified.</p>
+</div>
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-border-dark pl-3">
+<div class="flex items-center gap-2 text-text-dim mb-1">
+<span class="opacity-50">14:03:15</span>
+<span class="text-[10px] px-1 bg-blue-500/20 rounded text-blue-400">NET</span>
+</div>
+<p class="text-gray-300 leading-relaxed">Updating Knowledge Graph nodes: [Moonshot AI], [Kimi Chat].</p>
+</div>
+<!-- Log Entry -->
+<div class="flex flex-col gap-1 border-l-2 border-red-500/50 pl-3">
+<div class="flex items-center gap-2 text-red-400 mb-1">
+<span class="opacity-50">14:03:22</span>
+<span class="text-[10px] px-1 bg-red-500/20 rounded text-red-400">ALERT</span>
+</div>
+<p class="text-gray-300 leading-relaxed">Negative sentiment spike detected in comment threads ID: #88291.</p>
+</div>
+</div>
+<!-- Terminal Input -->
+<div class="p-3 border-t border-border-dark bg-surface-darker">
+<div class="flex items-center gap-2 text-xs font-mono text-text-dim">
+<span class="text-secondary">root@sentinel:~#</span>
+<span class="animate-pulse">_</span>
+</div>
+</div>
+</aside>
+<!-- Center Stage -->
+<div class="flex-1 flex flex-col relative bg-background-dark grid-bg">
+<!-- Top: GCR Social Pulse Cards -->
+<div class="p-6 grid grid-cols-4 gap-4 z-10">
+<!-- Card 1: WeChat -->
+<div class="bg-surface-dark border border-border-dark rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute top-0 right-0 w-20 h-20 bg-green-500/5 rounded-bl-full -mr-10 -mt-10"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<!-- Using a generic icon for platform -->
+<span class="material-symbols-outlined text-green-500">chat</span>
+<span class="font-bold text-sm">WeChat Pulse</span>
+</div>
+<span class="text-xs font-mono text-green-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 12%
+                        </span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold tracking-tight">88<span class="text-sm text-text-dim font-normal">/100</span></div>
+<div class="text-[10px] text-text-dim uppercase tracking-wider mt-1">Hotness Score</div>
+</div>
+<div class="h-10 w-10 relative flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewbox="0 0 36 36">
+<path class="text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-green-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="88, 100" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-border-dark space-y-1">
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#AIRegulation</span>
+<span class="text-white font-mono">2.4M</span>
+</div>
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#LLM</span>
+<span class="text-white font-mono">1.1M</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Zhihu -->
+<div class="bg-surface-dark border border-border-dark rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-bl-full -mr-10 -mt-10"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500">school</span>
+<span class="font-bold text-sm">Zhihu Heat</span>
+</div>
+<span class="text-xs font-mono text-blue-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 5%
+                        </span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold tracking-tight">76<span class="text-sm text-text-dim font-normal">/100</span></div>
+<div class="text-[10px] text-text-dim uppercase tracking-wider mt-1">Hotness Score</div>
+</div>
+<div class="h-10 w-10 relative flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewbox="0 0 36 36">
+<path class="text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-blue-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="76, 100" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-border-dark space-y-1">
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#DeepSeek</span>
+<span class="text-white font-mono">890K</span>
+</div>
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#AGI</span>
+<span class="text-white font-mono">450K</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Xiaohongshu -->
+<div class="bg-surface-dark border border-border-dark rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-bl-full -mr-10 -mt-10"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500">favorite</span>
+<span class="font-bold text-sm">XHS Trend</span>
+</div>
+<span class="text-xs font-mono text-red-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span> 3%
+                        </span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold tracking-tight">92<span class="text-sm text-text-dim font-normal">/100</span></div>
+<div class="text-[10px] text-text-dim uppercase tracking-wider mt-1">Hotness Score</div>
+</div>
+<div class="h-10 w-10 relative flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewbox="0 0 36 36">
+<path class="text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-red-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-border-dark space-y-1">
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#AICovers</span>
+<span class="text-white font-mono">3.2M</span>
+</div>
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#DigitalHuman</span>
+<span class="text-white font-mono">1.8M</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Douyin -->
+<div class="bg-surface-dark border border-border-dark rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute top-0 right-0 w-20 h-20 bg-gray-100/5 rounded-bl-full -mr-10 -mt-10"></div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white">music_note</span>
+<span class="font-bold text-sm">Douyin Vel</span>
+</div>
+<span class="text-xs font-mono text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> 8%
+                        </span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<div class="text-3xl font-bold tracking-tight">65<span class="text-sm text-text-dim font-normal">/100</span></div>
+<div class="text-[10px] text-text-dim uppercase tracking-wider mt-1">Hotness Score</div>
+</div>
+<div class="h-10 w-10 relative flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewbox="0 0 36 36">
+<path class="text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-white" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="65, 100" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-border-dark space-y-1">
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#AgenticWorkflow</span>
+<span class="text-white font-mono">560K</span>
+</div>
+<div class="flex justify-between text-xs">
+<span class="text-text-dim">#TechTok</span>
+<span class="text-white font-mono">1.2M</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Intelligence Map Visualization -->
+<div class="flex-1 relative overflow-hidden flex items-center justify-center">
+<!-- Decorative Graph Background -->
+<div class="absolute inset-0 opacity-20 pointer-events-none">
+<svg class="w-full h-full" viewbox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialgradient cx="50%" cy="50%" fx="50%" fy="50%" id="grad1" r="50%">
+<stop offset="0%" style="stop-color:rgba(19, 127, 236, 0.1);stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:rgba(19, 127, 236, 0);stop-opacity:0"></stop>
+</radialgradient>
+</defs>
+<circle cx="500" cy="300" fill="url(#grad1)" r="400"></circle>
+</svg>
+</div>
+<!-- Interactive Map Layer (Simulated with absolute divs) -->
+<div class="relative w-full h-full max-w-5xl max-h-[600px] mx-auto z-0">
+<!-- SVG for connection lines -->
+<svg class="absolute inset-0 w-full h-full z-0 pointer-events-none stroke-border-dark" style="stroke-width: 1.5px;">
+<!-- Main hub connections -->
+<line class="stroke-primary/30" x1="50%" x2="25%" y1="50%" y2="30%"></line>
+<line class="stroke-primary/30" x1="50%" x2="75%" y1="50%" y2="25%"></line>
+<line class="stroke-primary/30" x1="50%" x2="35%" y1="50%" y2="70%"></line>
+<line class="stroke-primary/30" x1="50%" x2="80%" y1="50%" y2="60%"></line>
+<!-- Secondary connections -->
+<line x1="25%" x2="15%" y1="30%" y2="20%"></line>
+<line x1="25%" x2="30%" y1="30%" y2="15%"></line>
+<line x1="75%" x2="85%" y1="25%" y2="15%"></line>
+<line x1="35%" x2="20%" y1="70%" y2="80%"></line>
+<!-- Dashed active line -->
+<line class="stroke-secondary" stroke-dasharray="5,5" x1="50%" x2="75%" y1="50%" y2="25%">
+<animate attributename="stroke-dashoffset" dur="2s" from="100" repeatcount="indefinite" to="0"></animate>
+</line>
+</svg>
+<!-- Central Node -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10">
+<div class="size-20 rounded-full bg-surface-dark border-4 border-primary/20 flex items-center justify-center pulse-dot relative bg-opacity-80 backdrop-blur-sm">
+<div class="size-3 rounded-full bg-primary shadow-[0_0_15px_rgba(19,127,236,1)]"></div>
+<!-- Orbiting satellite -->
+<div class="absolute w-full h-full animate-spin-slow rounded-full border border-transparent border-t-primary/60 border-r-primary/30" style="animation-duration: 8s; width: 140%; height: 140%;"></div>
+</div>
+<div class="mt-4 bg-surface-darker/80 backdrop-blur px-3 py-1 rounded border border-primary/30 text-center">
+<div class="text-xs font-bold text-white tracking-widest">INSIGHT CORE</div>
+<div class="text-[10px] text-primary font-mono">GCR REGION</div>
+</div>
+</div>
+<!-- Node 1: DeepSeek -->
+<div class="absolute top-[30%] left-[25%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer hover:scale-105 transition-transform z-10">
+<div class="size-12 rounded-full bg-surface-dark border-2 border-border-dark flex items-center justify-center hover:border-blue-400 group-hover:shadow-[0_0_15px_rgba(96,165,250,0.5)] transition-all">
+<span class="material-symbols-outlined text-blue-400 text-sm">smart_toy</span>
+</div>
+<div class="mt-2 bg-surface-darker/80 px-2 py-1 rounded border border-border-dark text-[10px] text-gray-300 font-medium">
+                            DeepSeek
+                        </div>
+<div class="absolute -top-6 bg-red-500/10 text-red-400 text-[9px] px-1.5 rounded border border-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Velocity +15%
+                        </div>
+</div>
+<!-- Node 2: Moonshot AI -->
+<div class="absolute top-[25%] left-[75%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer hover:scale-105 transition-transform z-10">
+<div class="size-14 rounded-full bg-surface-dark border-2 border-secondary/50 flex items-center justify-center shadow-[0_0_10px_rgba(0,255,157,0.2)]">
+<span class="material-symbols-outlined text-secondary text-base">rocket_launch</span>
+</div>
+<div class="mt-2 bg-surface-darker/80 px-2 py-1 rounded border border-border-dark text-[10px] text-gray-300 font-medium flex items-center gap-1">
+                            Moonshot AI <div class="size-1.5 bg-secondary rounded-full animate-pulse"></div>
+</div>
+</div>
+<!-- Node 3: KOL TechBrother -->
+<div class="absolute top-[70%] left-[35%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer hover:scale-105 transition-transform z-10">
+<div class="size-10 rounded-full bg-surface-dark border-2 border-border-dark flex items-center justify-center relative">
+<div class="absolute -right-1 -top-1 size-3 bg-blue-500 rounded-full border-2 border-surface-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[8px]">check</span>
+</div>
+<span class="material-symbols-outlined text-purple-400 text-sm">person</span>
+</div>
+<div class="mt-2 bg-surface-darker/80 px-2 py-1 rounded border border-border-dark text-[10px] text-gray-300 font-medium">
+                            KOL: TechBrother
+                        </div>
+</div>
+<!-- Node 4: Alibaba Cloud -->
+<div class="absolute top-[60%] left-[80%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer z-10 opacity-60 hover:opacity-100 transition-opacity">
+<div class="size-8 rounded-full bg-surface-dark border border-border-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-400 text-xs">cloud</span>
+</div>
+<div class="mt-2 text-[9px] text-gray-500 font-medium">
+                            Alibaba Cloud
+                        </div>
+</div>
+</div>
+</div>
+<!-- Agent Hub Command Bar -->
+<div class="p-6 relative z-20">
+<div class="max-w-4xl mx-auto bg-surface-dark/80 backdrop-blur-md border border-border-dark rounded-xl shadow-2xl overflow-hidden flex flex-col relative group focus-within:border-primary/50 transition-colors">
+<!-- Input Area -->
+<div class="flex items-center p-4 gap-4">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary animate-pulse">terminal</span>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<label class="sr-only" for="agent-command">Command</label>
+<div class="flex items-center text-lg font-mono text-white">
+<span class="text-primary mr-2">&gt;</span>
+<input autocomplete="off" class="bg-transparent border-none outline-none w-full placeholder-gray-600 font-mono focus:ring-0 p-0" id="agent-command" placeholder="Monitor updates on [Agentic Workflow]..." type="text"/>
+</div>
+</div>
+<button class="bg-primary hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold tracking-wide transition-colors flex items-center gap-2">
+                            EXECUTE
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Quick Actions / Suggestions -->
+<div class="bg-surface-darker/50 px-4 py-3 flex items-center gap-3 border-t border-border-dark overflow-x-auto">
+<span class="text-[10px] font-bold text-text-dim uppercase tracking-wider shrink-0">Quick Actions:</span>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-dark border border-border-dark hover:border-primary/40 hover:bg-primary/5 transition-all group shrink-0">
+<span class="material-symbols-outlined text-purple-400 text-[16px]">psychology</span>
+<span class="text-xs text-gray-300 group-hover:text-white">Analyze Sentiment</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-dark border border-border-dark hover:border-primary/40 hover:bg-primary/5 transition-all group shrink-0">
+<span class="material-symbols-outlined text-green-400 text-[16px]">hub</span>
+<span class="text-xs text-gray-300 group-hover:text-white">Map Connections</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-dark border border-border-dark hover:border-primary/40 hover:bg-primary/5 transition-all group shrink-0">
+<span class="material-symbols-outlined text-orange-400 text-[16px]">warning</span>
+<span class="text-xs text-gray-300 group-hover:text-white">Risk Assess</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
