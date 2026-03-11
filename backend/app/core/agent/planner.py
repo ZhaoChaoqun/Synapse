@@ -192,23 +192,47 @@ class Planner:
 
     def _create_default_plan(self, state: AgentState, error: str) -> List[SubTask]:
         """Create a default plan when LLM planning fails."""
-        command = state.original_command
+        command = state.original_command.lower()
 
         # Extract potential keywords from command
-        keywords = self._extract_keywords(command)
-        query = keywords[0] if keywords else command
+        keywords = self._extract_keywords(state.original_command)
+        query = keywords[0] if keywords else state.original_command
 
-        default_tasks = [
-            {
-                "description": f"在知乎搜索 '{query}' 相关内容",
+        # Detect which platforms to search based on command
+        platforms_to_search = []
+        platform_keywords = {
+            "xiaohongshu": ["小红书", "xhs", "xiaohongshu", "红书"],
+            "zhihu": ["知乎", "zhihu"],
+            "wechat": ["微信", "公众号", "wechat"],
+            "douyin": ["抖音", "douyin", "tiktok"],
+        }
+
+        for platform, kws in platform_keywords.items():
+            if any(kw in command for kw in kws):
+                platforms_to_search.append(platform)
+
+        # If no platforms detected, use defaults (知乎 + 微信公众号 + 小红书)
+        if not platforms_to_search:
+            platforms_to_search = ["zhihu", "wechat", "xiaohongshu"]
+
+        default_tasks = []
+
+        # Create search tasks for each detected platform
+        for platform in platforms_to_search:
+            platform_names = {
+                "xiaohongshu": "小红书",
+                "zhihu": "知乎",
+                "wechat": "微信公众号",
+                "douyin": "抖音",
+            }
+            default_tasks.append({
+                "description": f"在{platform_names.get(platform, platform)}搜索 '{query}' 相关内容",
                 "task_type": "search",
-                "parameters": {"platforms": ["zhihu"], "query": query, "time_range": "7d"}
-            },
-            {
-                "description": f"在微信公众号搜索 '{query}' 相关内容",
-                "task_type": "search",
-                "parameters": {"platforms": ["wechat"], "query": query, "time_range": "7d"}
-            },
+                "parameters": {"platforms": [platform], "query": query, "time_range": "7d"}
+            })
+
+        # Add analyze and synthesize tasks
+        default_tasks.extend([
             {
                 "description": "分析收集到的内容情感和关键信息",
                 "task_type": "analyze",
@@ -219,7 +243,7 @@ class Planner:
                 "task_type": "synthesize",
                 "parameters": {}
             },
-        ]
+        ])
 
         subtasks = []
         for task_data in default_tasks:

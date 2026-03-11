@@ -44,10 +44,11 @@ class ThoughtStep(BaseModel):
     tool_calls: List[Dict[str, Any]] = Field(default_factory=list)
     tokens_used: int = 0
     duration_ms: int = 0
+    screenshot: Optional[str] = None  # Base64 encoded browser screenshot
 
     def to_log_dict(self) -> Dict[str, Any]:
         """Convert to dict for SSE streaming."""
-        return {
+        result = {
             "step_id": self.step_id,
             "phase": self.phase.value,
             "timestamp": self.timestamp.isoformat(),
@@ -57,6 +58,9 @@ class ThoughtStep(BaseModel):
             "progress": self._calculate_progress(),
             "tokens_used": self.tokens_used,
         }
+        if self.screenshot:
+            result["screenshot"] = self.screenshot
+        return result
 
     def _calculate_progress(self) -> int:
         """Calculate progress percentage based on phase."""
@@ -140,6 +144,7 @@ class AgentState(BaseModel):
         action: Optional[str] = None,
         observation: Optional[str] = None,
         tokens_used: int = 0,
+        screenshot: Optional[str] = None,
     ) -> ThoughtStep:
         """Add a thought step to the chain."""
         step = ThoughtStep(
@@ -148,6 +153,7 @@ class AgentState(BaseModel):
             action=action,
             observation=observation,
             tokens_used=tokens_used,
+            screenshot=screenshot,
         )
         self.thought_chain.append(step)
         self.total_tokens += tokens_used

@@ -5,6 +5,7 @@ The central coordinator for the Agentic Loop.
 Manages the complete execution flow from command to final report.
 """
 
+import asyncio
 import logging
 from typing import AsyncGenerator, Callable, List, Optional
 
@@ -55,6 +56,25 @@ class AgentOrchestrator:
         self.critic = critic or get_critic()
         self.expander = expander or get_search_expander()
         self.self_healer = self_healer or get_self_healer()
+        self._current_state: Optional[AgentState] = None
+        # Queue for screenshot events from crawler
+        self._screenshot_queue: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
+
+    @property
+    def current_state(self) -> Optional[AgentState]:
+        """Get the current execution state."""
+        return self._current_state
+
+    def _on_screenshot(self, message: str, screenshot: str) -> None:
+        """
+        Callback for browser screenshots from crawlers.
+
+        Adds the screenshot to a queue for async processing.
+        """
+        try:
+            self._screenshot_queue.put_nowait((message, screenshot))
+        except asyncio.QueueFull:
+            logger.warning("Screenshot queue full, dropping screenshot")
 
     async def run(
         self,
@@ -71,34 +91,66 @@ class AgentOrchestrator:
         Yields:
             ThoughtStep objects representing each step of execution
         """
-        # Initialize state
-        state = AgentState(original_command=command)
+        # Initialize state and store reference
+        self._current_state = AgentState(original_command=command)
+        state = self._current_state
         state.mark_started()
+
+        # Set up screenshot callback on platform_search tool
+        search_tool = self.tools.get("platform_search")
+        if search_tool and hasattr(search_tool, "set_screenshot_callback"):
+            search_tool.set_screenshot_callback(self._on_screenshot)
 
         try:
             # Phase 1: Planning
             async for step in self._plan(state):
+                # Check for pending screenshots
+                async for ss_step in self._drain_screenshots(state):
+                    if on_step:
+                        on_step(ss_step)
+                    yield ss_step
                 if on_step:
                     on_step(step)
                 yield step
 
             # Phase 2: Execute subtasks
             async for step in self._execute_subtasks(state):
+                # Check for pending screenshots
+                async for ss_step in self._drain_screenshots(state):
+                    if on_step:
+                        on_step(ss_step)
+                    yield ss_step
                 if on_step:
                     on_step(step)
                 yield step
 
             # Phase 3: Critical evaluation
             async for step in self._critique(state):
+                # Check for pending screenshots
+                async for ss_step in self._drain_screenshots(state):
+                    if on_step:
+                        on_step(ss_step)
+                    yield ss_step
                 if on_step:
                     on_step(step)
                 yield step
 
             # Phase 4: Intelligent expansion (based on critique)
             async for step in self._expand_searches(state):
+                # Check for pending screenshots
+                async for ss_step in self._drain_screenshots(state):
+                    if on_step:
+                        on_step(ss_step)
+                    yield ss_step
                 if on_step:
                     on_step(step)
                 yield step
+
+            # Drain any remaining screenshots
+            async for ss_step in self._drain_screenshots(state):
+                if on_step:
+                    on_step(ss_step)
+                yield ss_step
 
             # Mark as completed
             state.mark_completed()
@@ -115,6 +167,27 @@ class AgentOrchestrator:
                 if on_step:
                     on_step(step)
                 yield step
+        finally:
+            # Clear screenshot callback
+            if search_tool and hasattr(search_tool, "set_screenshot_callback"):
+                search_tool.set_screenshot_callback(None)
+
+    async def _drain_screenshots(
+        self, state: AgentState
+    ) -> AsyncGenerator[ThoughtStep, None]:
+        """Drain all pending screenshots from the queue and yield as ThoughtSteps."""
+        while True:
+            try:
+                message, screenshot = self._screenshot_queue.get_nowait()
+                step = state.add_thought(
+                    phase=AgentPhase.SCRAPING,
+                    thought=message,
+                    action="browser_screenshot",
+                    screenshot=screenshot,
+                )
+                yield step
+            except asyncio.QueueEmpty:
+                break
 
     async def _plan(self, state: AgentState) -> AsyncGenerator[ThoughtStep, None]:
         """Execute planning phase."""

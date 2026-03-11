@@ -6,7 +6,7 @@ Searches content across GCR platforms (WeChat, Zhihu, Xiaohongshu, Douyin).
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from app.core.tools.base import BaseTool, ToolParameter, ToolResult
 from app.crawlers.base import BaseCrawler, CrawlResult
@@ -35,17 +35,28 @@ class PlatformSearchTool(BaseTool):
         "douyin": "抖音",
     }
 
-    def __init__(self, use_mock: bool = False):
+    def __init__(self, use_mock: bool = False, on_screenshot: Optional[Callable[[str, str], None]] = None):
         """
         Initialize the search tool.
 
         Args:
             use_mock: If True, use mock data instead of real crawlers
+            on_screenshot: Callback (message, base64_image) for browser screenshots
         """
         super().__init__()
         self.use_mock = use_mock
+        self.on_screenshot = on_screenshot
         self._crawlers: Dict[str, BaseCrawler] = {}
         self._initialized = False
+
+    def set_screenshot_callback(self, callback: Optional[Callable[[str, str], None]]) -> None:
+        """
+        Set the screenshot callback at runtime.
+
+        This allows the callback to be set after tool creation,
+        which is needed when the tool is created as a singleton.
+        """
+        self.on_screenshot = callback
 
     async def _init_crawlers(self) -> None:
         """Lazily initialize crawlers when first needed."""
@@ -128,7 +139,7 @@ class PlatformSearchTool(BaseTool):
         **kwargs,
     ) -> ToolResult:
         """Execute platform search."""
-        platforms = platforms or ["zhihu", "wechat"]
+        platforms = platforms or ["zhihu", "wechat", "xiaohongshu"]
 
         if self.use_mock:
             return await self._execute_mock(query, platforms, time_range, limit)
@@ -164,8 +175,13 @@ class PlatformSearchTool(BaseTool):
                     )
                 )
                 platform_order.append(platform)
-            elif platform in ["xiaohongshu", "douyin"]:
-                # Platforms not yet implemented - use mock for now
+            elif platform == "xiaohongshu":
+                # Use Playwright-based crawler for Xiaohongshu
+                xhs_results = await self._search_xiaohongshu(query, limit)
+                results.extend(xhs_results)
+                searched_platforms.append(platform)
+            elif platform == "douyin":
+                # Douyin not yet implemented - use mock for now
                 results.extend(self._generate_mock_results(query, platform, limit))
                 searched_platforms.append(platform)
             else:
@@ -226,6 +242,44 @@ class PlatformSearchTool(BaseTool):
             logger.error(f"Search failed for {crawler.platform_name}: {e}")
             return CrawlResult.failure(crawler.platform_name, str(e))
 
+    async def _search_xiaohongshu(
+        self,
+        query: str,
+        limit: int,
+    ) -> List[Dict[str, Any]]:
+        """Search Xiaohongshu using Playwright browser automation."""
+        try:
+            from app.crawlers.xiaohongshu import XiaohongshuCrawler
+
+            crawler = XiaohongshuCrawler(
+                on_screenshot=self.on_screenshot,
+                headless=True,
+            )
+
+            results = []
+            try:
+                await crawler.start()
+                async for note in crawler.search(query, limit):
+                    results.append({
+                        "id": f"xhs_{hash(note.get('url', '')) % 1000000}",
+                        "platform": "xiaohongshu",
+                        "title": note.get("title", ""),
+                        "summary": note.get("content", "")[:200] if note.get("content") else "",
+                        "author": note.get("author", ""),
+                        "url": note.get("url", ""),
+                        "published_at": None,
+                        "metrics": {"likes": note.get("likes", "0")},
+                    })
+            finally:
+                await crawler.close()
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Xiaohongshu search failed: {e}")
+            # Fall back to mock data on error
+            return self._generate_mock_results(query, "xiaohongshu", limit)
+
     async def _execute_mock(
         self,
         query: str,
@@ -278,7 +332,7 @@ class PlatformSearchTool(BaseTool):
                     "title": f"{query} 行业报告 - 第{i+1}期",
                     "summary": f"本文深入分析了 {query} 在行业中的应用前景和商业模式...",
                     "author": f"AI前沿公众号{i+1}",
-                    "url": None,
+                    "url": f"https://mp.weixin.qq.com/s/mock_{400000+i}",
                     "published_at": "2026-02-03",
                     "metrics": {"reads": 10000 - i * 1000, "likes": 500 - i * 50},
                 }
