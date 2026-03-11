@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { LogEntry, LogLevel } from '../types';
 
 interface LogPanelProps {
@@ -6,6 +6,8 @@ interface LogPanelProps {
 }
 
 const LogItem: React.FC<{ log: LogEntry }> = ({ log }) => {
+  const [showScreenshot, setShowScreenshot] = useState(true);
+
   const getColors = (level: LogLevel) => {
     switch (level) {
       case LogLevel.INFO: return { text: 'text-primary', bg: 'bg-primary/20', border: 'border-primary/50' };
@@ -28,6 +30,14 @@ const LogItem: React.FC<{ log: LogEntry }> = ({ log }) => {
         <span className={`text-[10px] px-1 rounded font-bold ${colors.bg} ${colors.text}`}>
           {log.level}
         </span>
+        {log.screenshot && (
+          <button
+            onClick={() => setShowScreenshot(!showScreenshot)}
+            className="text-[10px] px-1 rounded bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+          >
+            {showScreenshot ? '隐藏截图' : '显示截图'}
+          </button>
+        )}
       </div>
       <p className={`${isExec ? 'text-white' : 'text-gray-300'} leading-relaxed text-xs font-mono`}>
         {log.message}
@@ -39,6 +49,33 @@ const LogItem: React.FC<{ log: LogEntry }> = ({ log }) => {
       )}
       {log.details && (
         <p className="text-[10px] text-gray-500 font-mono mt-0.5">{log.details}</p>
+      )}
+      {log.screenshot && showScreenshot && (
+        <div className="mt-2 relative group">
+          <img
+            src={`data:image/jpeg;base64,${log.screenshot}`}
+            alt="Browser screenshot"
+            className="w-full rounded border border-cyan-500/30 shadow-lg shadow-cyan-500/10 cursor-pointer hover:border-cyan-400/50 transition-colors"
+            onClick={() => {
+              // Open in new tab for full view
+              const newTab = window.open();
+              if (newTab) {
+                newTab.document.body.innerHTML = `<img src="data:image/jpeg;base64,${log.screenshot}" style="max-width: 100%; height: auto;" />`;
+                newTab.document.body.style.backgroundColor = '#0a0a0f';
+                newTab.document.body.style.margin = '0';
+                newTab.document.body.style.display = 'flex';
+                newTab.document.body.style.justifyContent = 'center';
+                newTab.document.body.style.alignItems = 'center';
+                newTab.document.body.style.minHeight = '100vh';
+              }
+            }}
+          />
+          <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="text-[10px] bg-black/70 px-2 py-1 rounded text-cyan-400">
+              点击放大
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );

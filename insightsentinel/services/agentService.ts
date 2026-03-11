@@ -5,10 +5,10 @@
  * Supports SSE streaming for real-time thought chain updates.
  */
 
-import { LogEntry, LogLevel } from '../types';
+import { LogEntry, LogLevel, SearchResult, SearchResultsResponse, EntityGraph } from '../types';
 
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:9200';
 const API_VERSION = '/api/v1';
 
 // Phase to LogLevel mapping
@@ -36,6 +36,7 @@ export interface ThoughtStep {
   observation?: string;
   progress: number;
   tokens_used: number;
+  screenshot?: string; // Base64 encoded browser screenshot
 }
 
 export interface TaskResult {
@@ -81,6 +82,7 @@ function thoughtToLog(thought: ThoughtStep): LogEntry {
     message,
     details: thought.observation,
     progress: thought.progress,
+    screenshot: thought.screenshot,
   };
 }
 
@@ -300,6 +302,81 @@ export class AgentService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Get search results for a task
+   *
+   * @param taskId Task ID to get results for
+   * @param options Filter and pagination options
+   * @returns Search results with metadata
+   */
+  async getTaskResults(
+    taskId: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+      source?: string;
+      sentiment?: string;
+    }
+  ): Promise<SearchResultsResponse> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+    if (options?.source) params.append('source', options.source);
+    if (options?.sentiment) params.append('sentiment', options.sentiment);
+
+    const queryString = params.toString();
+    const url = `${this.baseUrl}/agent/tasks/${taskId}/results${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Transform snake_case to camelCase
+    return {
+      taskId: data.task_id,
+      query: data.query,
+      totalCount: data.total_count,
+      results: data.results.map((r: Record<string, unknown>) => ({
+        id: r.id,
+        title: r.title,
+        url: r.url,
+        source: r.source,
+        snippet: r.snippet,
+        content: r.content,
+        publishedAt: r.published_at,
+        author: r.author,
+        metrics: r.metrics,
+        relevanceScore: r.relevance_score,
+        sentiment: r.sentiment,
+        tags: r.tags,
+        scrapedAt: r.scraped_at,
+      })) as SearchResult[],
+      facets: data.facets,
+    };
+  }
+
+  /**
+   * Get entity relationship graph for a task
+   *
+   * @param taskId Task ID to get entity graph for
+   * @returns Entity graph with nodes and relationships
+   */
+  async getTaskEntityGraph(taskId: string): Promise<EntityGraph> {
+    const url = `${this.baseUrl}/agent/tasks/${taskId}/entity-graph`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 }
 

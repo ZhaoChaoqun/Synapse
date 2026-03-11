@@ -4,7 +4,8 @@ import { LogPanel } from './components/LogPanel';
 import { StatsGrid } from './components/StatsGrid';
 import { NetworkMap } from './components/NetworkMap';
 import { CommandBar } from './components/CommandBar';
-import { LogEntry, LogLevel } from './types';
+import { ResultsPanel } from './components/ResultsPanel';
+import { LogEntry, LogLevel, SearchResult, EntityGraph } from './types';
 import { agentService } from './services/agentService';
 import { geminiService } from './services/geminiService';
 
@@ -21,6 +22,17 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
   const [useMockMode, setUseMockMode] = useState(false);
+
+  // Search results state
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showResultsPanel, setShowResultsPanel] = useState(false);
+  const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+
+  // Entity graph state
+  const [entityGraph, setEntityGraph] = useState<EntityGraph | null>(null);
+  const [entityGraphLoading, setEntityGraphLoading] = useState(false);
 
   // Check backend health on mount
   useEffect(() => {
@@ -61,6 +73,12 @@ export default function App() {
   // Handle command execution
   const handleExecute = async (command: string) => {
     setIsProcessing(true);
+    // Reset results for new task
+    setSearchResults([]);
+    setShowResultsPanel(false);
+    setSelectedResultId(null);
+    setCurrentTaskId(null);
+    setEntityGraph(null);
 
     // Add command echo log
     addLog(LogLevel.EXEC, `USER CMD: ${command}`);
@@ -88,12 +106,18 @@ export default function App() {
           setLogs(prev => [...prev, log]);
         },
         // onComplete
-        (result) => {
+        async (result) => {
           addLog(
             LogLevel.INFO,
             `任务完成: ${result.task_id}`,
             `消耗 ${result.total_tokens} tokens`
           );
+
+          // Fetch search results after completion
+          setCurrentTaskId(result.task_id);
+          await fetchTaskResults(result.task_id);
+          // Fetch entity graph
+          await fetchEntityGraph(result.task_id);
         },
         // onError
         (error) => {
@@ -107,6 +131,50 @@ export default function App() {
       addLog(LogLevel.ALERT, '连接失败，切换到演示模式');
       setUseMockMode(true);
       await handleMockExecution(command);
+    }
+  };
+
+  // Fetch task results from backend
+  const fetchTaskResults = async (taskId: string) => {
+    try {
+      setResultsLoading(true);
+      const response = await agentService.getTaskResults(taskId);
+
+      if (response.results.length > 0) {
+        setSearchResults(response.results);
+        setShowResultsPanel(true);
+        addLog(
+          LogLevel.NET,
+          `获取到 ${response.totalCount} 条搜索结果`,
+          '点击右侧面板查看详情'
+        );
+      }
+    } catch (error) {
+      console.error('Failed to fetch results:', error);
+      // Don't show error to user - results might not be available yet
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  // Fetch entity graph from backend
+  const fetchEntityGraph = async (taskId: string) => {
+    try {
+      setEntityGraphLoading(true);
+      const graph = await agentService.getTaskEntityGraph(taskId);
+
+      if (graph.entities && graph.entities.length > 0) {
+        setEntityGraph(graph);
+        addLog(
+          LogLevel.INFO,
+          `实体分析完成: 发现 ${graph.entities.length} 个实体`,
+          `${graph.relations?.length || 0} 个关联关系`
+        );
+      }
+    } catch (error) {
+      console.error('Failed to fetch entity graph:', error);
+    } finally {
+      setEntityGraphLoading(false);
     }
   };
 
@@ -133,7 +201,14 @@ export default function App() {
     agentService.abort();
     addLog(LogLevel.WARN, '任务已取消');
     setIsProcessing(false);
+    setShowResultsPanel(false);
   }, [addLog]);
+
+  // Handle closing results panel
+  const handleCloseResultsPanel = useCallback(() => {
+    setShowResultsPanel(false);
+    setSelectedResultId(null);
+  }, []);
 
   // Get status indicator color
   const getStatusColor = () => {
@@ -162,15 +237,27 @@ export default function App() {
       <main className="flex-1 flex overflow-hidden">
         <LogPanel logs={logs} />
 
-        <div className="flex-1 flex flex-col relative bg-background-dark grid-bg">
+        <div className={`flex-1 flex flex-col relative bg-background-dark grid-bg transition-all duration-300 ${showResultsPanel ? 'mr-0' : ''}`}>
           <StatsGrid />
-          <NetworkMap />
+          <NetworkMap entityGraph={entityGraph} isLoading={entityGraphLoading} />
           <CommandBar
             onExecute={handleExecute}
             isProcessing={isProcessing}
             onAbort={handleAbort}
           />
         </div>
+
+        {/* Results Panel - slides in from right */}
+        {showResultsPanel && (
+          <ResultsPanel
+            results={searchResults}
+            totalCount={searchResults.length}
+            isLoading={resultsLoading}
+            selectedId={selectedResultId}
+            onSelectResult={setSelectedResultId}
+            onClose={handleCloseResultsPanel}
+          />
+        )}
       </main>
     </div>
   );
