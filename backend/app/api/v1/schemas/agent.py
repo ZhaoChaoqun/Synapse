@@ -68,3 +68,38 @@ class AgentTaskResponse(BaseModel):
     duration_ms: int = 0
     created_at: datetime
     completed_at: Optional[datetime] = None
+
+
+# 搜索结果相关 Schema
+class SearchResultMetrics(BaseModel):
+    """搜索结果的指标数据"""
+    views: Optional[int] = None
+    likes: Optional[int] = None
+    comments: Optional[int] = None
+    shares: Optional[int] = None
+
+
+class SearchResultResponse(BaseModel):
+    """单个搜索结果的响应"""
+    id: str
+    title: str
+    url: str
+    source: str  # weixin, zhihu, weibo, xhs, douyin, web
+    snippet: str
+    content: Optional[str] = None
+    published_at: Optional[datetime] = None
+    author: Optional[str] = None
+    metrics: Optional[SearchResultMetrics] = None
+    relevance_score: int = Field(ge=0, le=100)
+    sentiment: Optional[str] = None  # positive, neutral, negative
+    tags: List[str] = []
+    scraped_at: datetime
+
+
+class TaskResultsResponse(BaseModel):
+    """任务搜索结果的响应"""
+    task_id: str
+    query: str
+    results: List[SearchResultResponse]
+    total_count: int
+    facets: Optional[Dict[str, Dict[str, int]]] = None  # 按来源/情感分组统计
